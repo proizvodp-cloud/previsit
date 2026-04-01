@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
+from routes import intake, cases
 
 app = FastAPI(
     title="PreVisit API",
@@ -23,8 +24,5 @@ async def health():
     return {"status": "ok"}
 
 
-# Routes will be included here as they are created
-# from routes import auth, intake, cases
-# app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-# app.include_router(intake.router, prefix="/api/intake", tags=["intake"])
-# app.include_router(cases.router, prefix="/api/cases", tags=["cases"])
+app.include_router(intake.router, prefix="/api/intake", tags=["intake"])
+app.include_router(cases.router, prefix="/api/cases", tags=["cases"])
