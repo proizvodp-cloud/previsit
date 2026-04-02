@@ -6,7 +6,7 @@ set -e
 # We download the correct binary directly.
 
 SWC_DIR="/app/node_modules/@next/swc-linux-x64-musl"
-NEXT_VERSION=$(node -e "require('/app/node_modules/next/package.json').version")
+NEXT_VERSION=$(node -e "console.log(require('/app/node_modules/next/package.json').version)")
 
 if [ ! -f "$SWC_DIR/next-swc.linux-x64-musl.node" ]; then
   echo "Installing @next/swc-linux-x64-musl@${NEXT_VERSION}..."
@@ -22,4 +22,5 @@ else
   echo "SWC binary already present"
 fi
 
+cd /app
 exec "$@"

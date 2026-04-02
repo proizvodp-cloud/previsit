@@ -193,7 +193,7 @@ async def seed():
                     Appointment.patient_id == patient.id,
                 )
             )
-            appt = appt_result.scalar_one_or_none()
+            appt = appt_result.scalars().first()
             if appt is None:
                 token = uuid.uuid4().hex
                 appt = Appointment(
