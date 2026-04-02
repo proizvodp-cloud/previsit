@@ -1,12 +1,12 @@
 """
-Seed script: creates test clinic, doctor, patient, appointment and therapist template.
+Seed script: creates test clinic, doctors, patients, appointments and intake templates.
 Run from within the backend container:
   docker compose exec backend python seed.py
 """
 import asyncio
 import json
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from pathlib import Path
 
 from sqlalchemy import select
@@ -17,6 +17,85 @@ from models.doctor import Doctor
 from models.patient import Patient
 from models.appointment import Appointment
 from models.intake_template import IntakeTemplate
+
+
+TEMPLATES = [
+    {
+        "specialty": "therapist",
+        "name": "Анкета первичного приёма терапевта",
+        "description": "Стандартный сбор анамнеза для первичного визита к терапевту",
+        "file": "therapist.json",
+    },
+    {
+        "specialty": "cardiologist",
+        "name": "Анкета первичного приёма кардиолога",
+        "description": "Сбор жалоб и анамнеза для кардиологического приёма",
+        "file": "cardio.json",
+    },
+    {
+        "specialty": "orthopedist",
+        "name": "Анкета первичного приёма хирурга-ортопеда",
+        "description": "Сбор жалоб и анамнеза для ортопедического приёма",
+        "file": "ortho.json",
+    },
+]
+
+DOCTORS = [
+    {
+        "first_name": "Иван",
+        "last_name": "Иванов",
+        "specialty": "therapist",
+        "email": "ivanov@clinic1.ru",
+        "phone": "+7 (495) 123-45-68",
+    },
+    {
+        "first_name": "Елена",
+        "last_name": "Смирнова",
+        "specialty": "cardiologist",
+        "email": "smirnova@clinic1.ru",
+        "phone": "+7 (495) 123-45-69",
+    },
+    {
+        "first_name": "Дмитрий",
+        "last_name": "Козлов",
+        "specialty": "orthopedist",
+        "email": "kozlov@clinic1.ru",
+        "phone": "+7 (495) 123-45-70",
+    },
+]
+
+PATIENTS = [
+    {
+        "first_name": "Пётр",
+        "last_name": "Петров",
+        "date_of_birth": date(1985, 6, 15),
+        "phone": "+7 (916) 987-65-43",
+        "email": "petrov@example.com",
+        "doctor_email": "ivanov@clinic1.ru",
+        "specialty": "therapist",
+        "days_ahead": 1,
+    },
+    {
+        "first_name": "Анна",
+        "last_name": "Сидорова",
+        "date_of_birth": date(1972, 3, 22),
+        "phone": "+7 (926) 111-22-33",
+        "email": "sidorova@example.com",
+        "doctor_email": "smirnova@clinic1.ru",
+        "specialty": "cardiologist",
+        "days_ahead": 2,
+    },
+    {
+        "first_name": "Михаил",
+        "last_name": "Фёдоров",
+        "date_of_birth": date(1990, 11, 8),
+        "phone": "+7 (936) 444-55-66",
+        "email": "fedorov@example.com",
+        "doctor_email": "kozlov@clinic1.ru",
+        "specialty": "orthopedist",
+        "days_ahead": 3,
+    },
+]
 
 
 async def seed():
@@ -39,95 +118,100 @@ async def seed():
         else:
             print(f"[=] Clinic already exists: id={clinic.id}")
 
-        # --- Doctor ---
-        doctor_result = await db.execute(
-            select(Doctor).where(Doctor.email == "ivanov@clinic1.ru")
-        )
-        doctor = doctor_result.scalar_one_or_none()
-        if doctor is None:
-            doctor = Doctor(
-                clinic_id=clinic.id,
-                first_name="Иван",
-                last_name="Иванов",
-                specialty="therapist",
-                email="ivanov@clinic1.ru",
-                phone="+7 (495) 123-45-68",
+        # --- Doctors ---
+        doctor_map: dict[str, Doctor] = {}
+        for d in DOCTORS:
+            result = await db.execute(
+                select(Doctor).where(Doctor.email == d["email"])
             )
-            db.add(doctor)
-            await db.flush()
-            print(f"[+] Doctor created: id={doctor.id}")
-        else:
-            print(f"[=] Doctor already exists: id={doctor.id}")
+            doctor = result.scalar_one_or_none()
+            if doctor is None:
+                doctor = Doctor(
+                    clinic_id=clinic.id,
+                    first_name=d["first_name"],
+                    last_name=d["last_name"],
+                    specialty=d["specialty"],
+                    email=d["email"],
+                    phone=d["phone"],
+                )
+                db.add(doctor)
+                await db.flush()
+                print(f"[+] Doctor created: {d['first_name']} {d['last_name']} ({d['specialty']})")
+            else:
+                print(f"[=] Doctor already exists: {d['first_name']} {d['last_name']}")
+            doctor_map[d["email"]] = doctor
 
-        # --- Patient ---
-        patient_result = await db.execute(
-            select(Patient).where(Patient.email == "petrov@example.com")
-        )
-        patient = patient_result.scalar_one_or_none()
-        if patient is None:
-            from datetime import date
-            patient = Patient(
-                first_name="Пётр",
-                last_name="Петров",
-                date_of_birth=date(1985, 6, 15),
-                phone="+7 (916) 987-65-43",
-                email="petrov@example.com",
+        # --- Intake Templates ---
+        template_map: dict[str, IntakeTemplate] = {}
+        templates_dir = Path(__file__).parent / "templates"
+        for t in TEMPLATES:
+            result = await db.execute(
+                select(IntakeTemplate).where(IntakeTemplate.specialty == t["specialty"])
             )
-            db.add(patient)
-            await db.flush()
-            print(f"[+] Patient created: id={patient.id}")
-        else:
-            print(f"[=] Patient already exists: id={patient.id}")
+            template = result.scalar_one_or_none()
+            if template is None:
+                questions_path = templates_dir / t["file"]
+                questions = json.loads(questions_path.read_text(encoding="utf-8"))
+                template = IntakeTemplate(
+                    specialty=t["specialty"],
+                    name=t["name"],
+                    description=t["description"],
+                    questions=questions,
+                )
+                db.add(template)
+                await db.flush()
+                print(f"[+] Template created: {t['name']}")
+            else:
+                print(f"[=] Template already exists: {t['specialty']}")
+            template_map[t["specialty"]] = template
 
-        # --- Intake Template ---
-        template_result = await db.execute(
-            select(IntakeTemplate).where(IntakeTemplate.specialty == "therapist")
-        )
-        template = template_result.scalar_one_or_none()
-        if template is None:
-            questions_path = Path(__file__).parent / "templates" / "therapist.json"
-            questions = json.loads(questions_path.read_text(encoding="utf-8"))
-            template = IntakeTemplate(
-                specialty="therapist",
-                name="Анкета первичного приёма терапевта",
-                description="Стандартный сбор анамнеза для первичного визита к терапевту",
-                questions=questions,
+        # --- Patients + Appointments ---
+        print()
+        for p in PATIENTS:
+            patient_result = await db.execute(
+                select(Patient).where(Patient.email == p["email"])
             )
-            db.add(template)
-            await db.flush()
-            print(f"[+] IntakeTemplate created: id={template.id}")
-        else:
-            print(f"[=] IntakeTemplate already exists: id={template.id}")
+            patient = patient_result.scalar_one_or_none()
+            if patient is None:
+                patient = Patient(
+                    first_name=p["first_name"],
+                    last_name=p["last_name"],
+                    date_of_birth=p["date_of_birth"],
+                    phone=p["phone"],
+                    email=p["email"],
+                )
+                db.add(patient)
+                await db.flush()
+                print(f"[+] Patient created: {p['first_name']} {p['last_name']}")
+            else:
+                print(f"[=] Patient already exists: {p['first_name']} {p['last_name']}")
 
-        # --- Appointment ---
-        appointment_result = await db.execute(
-            select(Appointment).where(
-                Appointment.doctor_id == doctor.id,
-                Appointment.patient_id == patient.id,
+            doctor = doctor_map[p["doctor_email"]]
+            appt_result = await db.execute(
+                select(Appointment).where(
+                    Appointment.doctor_id == doctor.id,
+                    Appointment.patient_id == patient.id,
+                )
             )
-        )
-        appointment = appointment_result.scalar_one_or_none()
-        if appointment is None:
-            token = uuid.uuid4().hex
-            appointment = Appointment(
-                doctor_id=doctor.id,
-                patient_id=patient.id,
-                scheduled_at=datetime.now(timezone.utc) + timedelta(days=1),
-                invite_token=token,
-                status="pending",
-                notes="Первичный приём",
-            )
-            db.add(appointment)
-            await db.flush()
-            print(f"[+] Appointment created: id={appointment.id}")
-            print(f"\n{'='*60}")
-            print(f"  Invite token: {token}")
-            print(f"  Patient URL:  http://localhost:3000/intake/{token}")
-            print(f"{'='*60}\n")
-        else:
-            print(f"[=] Appointment already exists: id={appointment.id}")
-            print(f"    Invite token: {appointment.invite_token}")
-            print(f"    Patient URL:  http://localhost:3000/intake/{appointment.invite_token}")
+            appt = appt_result.scalar_one_or_none()
+            if appt is None:
+                token = uuid.uuid4().hex
+                appt = Appointment(
+                    doctor_id=doctor.id,
+                    patient_id=patient.id,
+                    scheduled_at=datetime.now(timezone.utc) + timedelta(days=p["days_ahead"]),
+                    invite_token=token,
+                    status="pending",
+                    notes="Первичный приём",
+                )
+                db.add(appt)
+                await db.flush()
+                print(f"[+] Appointment created for {p['first_name']} → {doctor.last_name}")
+                print(f"    Token: {token}")
+                print(f"    URL:   http://localhost:3000/intake/{token}")
+            else:
+                print(f"[=] Appointment exists: {p['first_name']} → {doctor.last_name}")
+                print(f"    URL:   http://localhost:3000/intake/{appt.invite_token}")
 
         await db.commit()
         print("\n[OK] Seed completed.")

@@ -1,4 +1,4 @@
-import type { CaseData, IntakeInfo } from "@/types";
+import type { AppointmentListItem, CaseData, CaseListItem, IntakeInfo } from "@/types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -15,6 +15,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // --- Intake ---
   getIntake: (token: string) =>
     request<IntakeInfo>(`/api/intake/${token}`),
 
@@ -34,6 +35,25 @@ export const api = {
       method: "POST",
     }),
 
+  // --- Cases ---
+  getCases: () =>
+    request<CaseListItem[]>(`/api/cases`),
+
   getCase: (id: string | number) =>
     request<CaseData>(`/api/cases/${id}`),
+
+  reviewCase: (id: number, doctor_notes?: string) =>
+    request<{ id: number; status: string }>(`/api/cases/${id}/review`, {
+      method: "PATCH",
+      body: JSON.stringify({ doctor_notes: doctor_notes ?? null }),
+    }),
+
+  // --- Appointments ---
+  getAppointments: () =>
+    request<AppointmentListItem[]>(`/api/appointments`),
+
+  sendInvite: (appointmentId: number) =>
+    request<{ status: string; to: string }>(`/api/appointments/${appointmentId}/send-invite`, {
+      method: "POST",
+    }),
 };

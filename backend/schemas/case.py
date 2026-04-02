@@ -20,3 +20,21 @@ class CaseOut(BaseModel):
     doctor_notes: str | None
     reviewed_at: datetime | None
     created_at: datetime
+
+
+class CaseListItem(BaseModel):
+    """Short case info for dashboard list."""
+    id: int
+    status: str
+    patient_first_name: str
+    patient_last_name: str
+    doctor_first_name: str
+    doctor_last_name: str
+    scheduled_at: datetime
+    ai_flags_count: int
+    created_at: datetime
+
+
+class ReviewRequest(BaseModel):
+    """Body for PATCH /api/cases/{id}/review"""
+    doctor_notes: str | None = None

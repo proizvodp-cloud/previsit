@@ -1,0 +1,107 @@
+[
+  {
+    "id": "chief_complaint",
+    "text": "Опишите вашу основную жалобу — что вас беспокоит больше всего?",
+    "type": "text",
+    "options": null,
+    "required": true
+  },
+  {
+    "id": "chest_pain",
+    "text": "Есть ли у вас боли или дискомфорт в области груди?",
+    "type": "boolean",
+    "options": null,
+    "required": true
+  },
+  {
+    "id": "chest_pain_character",
+    "text": "Если да — как бы вы описали характер боли?",
+    "type": "choice",
+    "options": ["Давящая, сжимающая", "Жгучая", "Колющая", "Ноющая", "Боли нет"],
+    "required": true
+  },
+  {
+    "id": "chest_pain_radiation",
+    "text": "Куда отдаёт боль?",
+    "type": "choice",
+    "options": ["В левую руку или плечо", "В шею или нижнюю челюсть", "В спину", "Никуда не отдаёт", "Боли нет"],
+    "required": true
+  },
+  {
+    "id": "chest_pain_trigger",
+    "text": "Когда возникает боль?",
+    "type": "choice",
+    "options": ["При физической нагрузке", "В покое", "Ночью", "Без связи с чем-либо", "Боли нет"],
+    "required": true
+  },
+  {
+    "id": "dyspnea",
+    "text": "Есть ли у вас одышка?",
+    "type": "boolean",
+    "options": null,
+    "required": true
+  },
+  {
+    "id": "dyspnea_trigger",
+    "text": "Когда возникает одышка?",
+    "type": "choice",
+    "options": ["При обычной физической нагрузке", "При минимальной нагрузке", "В покое", "Ночью (просыпаетесь от удушья)", "Одышки нет"],
+    "required": true
+  },
+  {
+    "id": "palpitations",
+    "text": "Бывают ли у вас ощущения перебоев в работе сердца, сильного или неровного сердцебиения?",
+    "type": "boolean",
+    "options": null,
+    "required": true
+  },
+  {
+    "id": "edema",
+    "text": "Есть ли отёки ног, особенно к вечеру?",
+    "type": "boolean",
+    "options": null,
+    "required": true
+  },
+  {
+    "id": "fainting",
+    "text": "Были ли у вас обмороки, потеря сознания или выраженные головокружения?",
+    "type": "boolean",
+    "options": null,
+    "required": true
+  },
+  {
+    "id": "hypertension_history",
+    "text": "Известно ли вам о повышенном артериальном давлении?",
+    "type": "boolean",
+    "options": null,
+    "required": true
+  },
+  {
+    "id": "blood_pressure",
+    "text": "Ваши обычные показатели давления (например: 130/80). Если не знаете — напишите «не знаю».",
+    "type": "text",
+    "options": null,
+    "required": true
+  },
+  {
+    "id": "medications",
+    "text": "Какие лекарства вы принимаете регулярно? Укажите названия и дозировки. Если не принимаете — «не принимаю».",
+    "type": "text",
+    "options": null,
+    "required": true
+  },
+  {
+    "id": "family_history",
+    "text": "Были ли у близких родственников инфаркт, инсульт, тяжёлые болезни сердца до 60 лет?",
+    "type": "boolean",
+    "options": null,
+    "required": true
+  },
+  {
+    "id": "risk_factors",
+    "text": "Отметьте факторы, которые вас касаются:",
+    "type": "multi_choice",
+    "options": ["Курю", "Употребляю алкоголь регулярно", "Избыточный вес", "Малоподвижный образ жизни", "Диабет", "Высокий холестерин", "Ничего из перечисленного"],
+    "required": true
+  }
+]

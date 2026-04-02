@@ -37,3 +37,29 @@ export interface CaseData {
   reviewed_at: string | null;
   created_at: string;
 }
+
+export interface CaseListItem {
+  id: number;
+  status: "draft" | "ready" | "reviewed";
+  patient_first_name: string;
+  patient_last_name: string;
+  doctor_first_name: string;
+  doctor_last_name: string;
+  scheduled_at: string;
+  ai_flags_count: number;
+  created_at: string;
+}
+
+export interface AppointmentListItem {
+  id: number;
+  invite_token: string;
+  status: string;
+  patient_first_name: string;
+  patient_last_name: string;
+  patient_email: string | null;
+  doctor_first_name: string;
+  doctor_last_name: string;
+  scheduled_at: string;
+  intake_status: string | null;
+  case_id: number | null;
+}
