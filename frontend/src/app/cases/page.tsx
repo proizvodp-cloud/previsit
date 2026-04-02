@@ -152,16 +152,18 @@ function PatientEditModal({
 
 // ─── Share helpers ────────────────────────────────────────────────────────────
 
+const SHARE_ORIGIN = process.env.NEXT_PUBLIC_SHARE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
+
 function shareWhatsApp(appt: AppointmentListItem) {
   const phone = appt.patient_phone?.replace(/\D/g, "");
   if (!phone) return;
-  const url = `${window.location.origin}/intake/${appt.invite_token}`;
+  const url = `${SHARE_ORIGIN}/intake/${appt.invite_token}`;
   const msg = `Уважаемый(ая) ${appt.patient_first_name}, ваш приём ${formatDate(appt.scheduled_at)}. Пожалуйста, заполните анкету заранее: ${url}`;
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
 function shareTelegram(appt: AppointmentListItem) {
-  const url = `${window.location.origin}/intake/${appt.invite_token}`;
+  const url = `${SHARE_ORIGIN}/intake/${appt.invite_token}`;
   const msg = `Уважаемый(ая) ${appt.patient_first_name}, ваш приём ${formatDate(appt.scheduled_at)}. Пожалуйста, заполните анкету заранее:`;
   window.open(
     `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(msg)}`,
@@ -171,7 +173,7 @@ function shareTelegram(appt: AppointmentListItem) {
 
 function shareSMS(appt: AppointmentListItem) {
   if (!appt.patient_phone) return;
-  const url = `${window.location.origin}/intake/${appt.invite_token}`;
+  const url = `${SHARE_ORIGIN}/intake/${appt.invite_token}`;
   const msg = `Уважаемый(ая) ${appt.patient_first_name}, ваш приём ${formatDate(appt.scheduled_at)}. Заполните анкету: ${url}`;
   window.open(`sms:${appt.patient_phone}?body=${encodeURIComponent(msg)}`);
 }
