@@ -1,4 +1,4 @@
-# ── Development stage (default) ────────────────────────────────────────────
+# ── Development stage (default) ──────────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS dev
 
 WORKDIR /app
@@ -29,7 +29,7 @@ EXPOSE 3000
 CMD ["npm", "run", "dev"]
 
 
-# ── Production build stage ──────────────────────────────────────────────────
+# ── Production build stage ─────────────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -55,11 +55,13 @@ COPY . .
 
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ARG NEXT_PUBLIC_SHARE_URL
+ENV NEXT_PUBLIC_SHARE_URL=${NEXT_PUBLIC_SHARE_URL}
 
 RUN npm run build
 
 
-# ── Production runtime stage ────────────────────────────────────────────────
+# ── Production runtime stage ────────────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS prod
 
 WORKDIR /app

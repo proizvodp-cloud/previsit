@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import type { AppointmentListItem, CaseListItem } from "@/types";
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", {
@@ -46,7 +46,7 @@ function IntakeStatusBadge({ status }: { status: string | null }) {
   );
 }
 
-// ─── Patient Edit Modal ──────────────────────────────────────────────────────
+// ─── Patient Edit Modal ───────────────────────────────────────────────────────────
 
 interface PatientForm {
   first_name: string;
@@ -150,20 +150,29 @@ function PatientEditModal({
   );
 }
 
-// ─── Share helpers ────────────────────────────────────────────────────────────
+// ─── Share helpers ───────────────────────────────────────────────────────────────────────────
 
-const SHARE_ORIGIN = process.env.NEXT_PUBLIC_SHARE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
+const SHARE_ORIGIN = process.env.NEXT_PUBLIC_SHARE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+
+function getIntakeUrl(appt: AppointmentListItem) {
+  return `${SHARE_ORIGIN}/intake/${appt.invite_token}`;
+}
+
+async function copyIntakeLink(appt: AppointmentListItem) {
+  const url = getIntakeUrl(appt);
+  await navigator.clipboard.writeText(url);
+}
 
 function shareWhatsApp(appt: AppointmentListItem) {
   const phone = appt.patient_phone?.replace(/\D/g, "");
   if (!phone) return;
-  const url = `${SHARE_ORIGIN}/intake/${appt.invite_token}`;
+  const url = getIntakeUrl(appt);
   const msg = `Уважаемый(ая) ${appt.patient_first_name}, ваш приём ${formatDate(appt.scheduled_at)}. Пожалуйста, заполните анкету заранее: ${url}`;
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
 function shareTelegram(appt: AppointmentListItem) {
-  const url = `${SHARE_ORIGIN}/intake/${appt.invite_token}`;
+  const url = getIntakeUrl(appt);
   const msg = `Уважаемый(ая) ${appt.patient_first_name}, ваш приём ${formatDate(appt.scheduled_at)}. Пожалуйста, заполните анкету заранее:`;
   window.open(
     `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(msg)}`,
@@ -173,12 +182,12 @@ function shareTelegram(appt: AppointmentListItem) {
 
 function shareSMS(appt: AppointmentListItem) {
   if (!appt.patient_phone) return;
-  const url = `${SHARE_ORIGIN}/intake/${appt.invite_token}`;
+  const url = getIntakeUrl(appt);
   const msg = `Уважаемый(ая) ${appt.patient_first_name}, ваш приём ${formatDate(appt.scheduled_at)}. Заполните анкету: ${url}`;
   window.open(`sms:${appt.patient_phone}?body=${encodeURIComponent(msg)}`);
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const [cases, setCases] = useState<CaseListItem[]>([]);
@@ -189,6 +198,7 @@ export default function DashboardPage() {
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [editingPatient, setEditingPatient] = useState<AppointmentListItem | null>(null);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -353,7 +363,20 @@ export default function DashboardPage() {
                               Отправить ссылку ▾
                             </button>
                             {openDropdownId === appt.id && (
-                              <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-10 py-1">
+                              <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 z-10 py-1">
+                                <button
+                                  onClick={() => {
+                                    copyIntakeLink(appt).then(() => {
+                                      setCopiedId(appt.id);
+                                      setTimeout(() => setCopiedId(null), 2000);
+                                    });
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 text-gray-700 font-medium"
+                                >
+                                  {copiedId === appt.id ? "✓ Скопировано!" : "📋 Скопировать ссылку"}
+                                </button>
+                                <div className="border-t border-gray-100 my-1" />
                                 {appt.patient_phone && (
                                   <>
                                     <button

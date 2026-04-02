@@ -34,6 +34,7 @@ services:
       target: prod
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_SHARE_URL: ${NEXT_PUBLIC_SHARE_URL}
     env_file:
       - .env.production
     depends_on:
