@@ -46,7 +46,111 @@ function IntakeStatusBadge({ status }: { status: string | null }) {
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+// ─── Patient Edit Modal ──────────────────────────────────────────────────────
+
+interface PatientForm {
+  first_name: string;
+  last_name: string;
+  phone: string;
+  email: string;
+}
+
+function PatientEditModal({
+  appt,
+  onSave,
+  onClose,
+}: {
+  appt: AppointmentListItem;
+  onSave: (patientId: number, data: PatientForm) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState<PatientForm>({
+    first_name: appt.patient_first_name,
+    last_name: appt.patient_last_name,
+    phone: appt.patient_phone ?? "",
+    email: appt.patient_email ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.first_name.trim() || !form.last_name.trim()) return;
+    setSaving(true);
+    await onSave(appt.patient_id, form);
+    setSaving(false);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-4">Данные пациента</h2>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Фамилия</label>
+            <input
+              autoFocus
+              type="text"
+              value={form.last_name}
+              onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="Иванов"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Имя</label>
+            <input
+              type="text"
+              value={form.first_name}
+              onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="Иван"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Телефон</label>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="+7 (999) 000-00-00"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Email</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="patient@example.com"
+            />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50 transition-colors"
+            >
+              {saving ? "Сохранение..." : "Сохранить"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium transition-colors"
+            >
+              Отмена
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Share helpers ────────────────────────────────────────────────────────────
 
 function shareWhatsApp(appt: AppointmentListItem) {
   const phone = appt.patient_phone?.replace(/\D/g, "");
@@ -72,6 +176,8 @@ function shareSMS(appt: AppointmentListItem) {
   window.open(`sms:${appt.patient_phone}?body=${encodeURIComponent(msg)}`);
 }
 
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
 export default function DashboardPage() {
   const [cases, setCases] = useState<CaseListItem[]>([]);
   const [appointments, setAppointments] = useState<AppointmentListItem[]>([]);
@@ -80,8 +186,7 @@ export default function DashboardPage() {
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
-  const [editingPhoneId, setEditingPhoneId] = useState<number | null>(null);
-  const [editingPhoneValue, setEditingPhoneValue] = useState("");
+  const [editingPatient, setEditingPatient] = useState<AppointmentListItem | null>(null);
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -115,25 +220,28 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleSavePhone(appt: AppointmentListItem) {
-    const newPhone = editingPhoneValue.trim();
+  async function handleSavePatient(patientId: number, data: PatientForm) {
     try {
-      await api.updatePatientPhone(appt.patient_id, newPhone);
+      const updated = await api.updatePatient(patientId, data);
       setAppointments((prev) =>
         prev.map((a) =>
-          a.patient_id === appt.patient_id
-            ? { ...a, patient_phone: newPhone || null }
+          a.patient_id === patientId
+            ? {
+                ...a,
+                patient_first_name: updated.first_name,
+                patient_last_name: updated.last_name,
+                patient_phone: updated.phone,
+                patient_email: updated.email,
+              }
             : a
         )
       );
+      setEditingPatient(null);
     } catch (e: unknown) {
       alert(`Ошибка: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setEditingPhoneId(null);
     }
   }
 
-  // Appointments without a completed case yet
   const pendingAppointments = appointments.filter(
     (a) => !a.case_id || a.intake_status !== "completed"
   );
@@ -159,9 +267,18 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Patient edit modal */}
+      {editingPatient && (
+        <PatientEditModal
+          appt={editingPatient}
+          onSave={handleSavePatient}
+          onClose={() => setEditingPatient(null)}
+        />
+      )}
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <h1 className="text-xl font-semibold text-gray-900">Дашборд врача</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Дашборд</h1>
         <p className="text-sm text-gray-500 mt-0.5">
           {cases.length} кейс{cases.length === 1 ? "" : cases.length < 5 ? "а" : "ов"} ·{" "}
           {pendingAppointments.length} записей ожидают анкету
@@ -194,53 +311,22 @@ export default function DashboardPage() {
                     return (
                       <tr key={appt.id} className="border-b border-gray-50 hover:bg-gray-50/60">
                         <td className="px-4 py-3">
-                          <div className="font-medium text-gray-900">
-                            {appt.patient_last_name} {appt.patient_first_name}
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-gray-900">
+                              {appt.patient_last_name} {appt.patient_first_name}
+                            </span>
+                            <button
+                              onClick={() => setEditingPatient(appt)}
+                              className="text-gray-300 hover:text-blue-500 transition-colors"
+                              title="Редактировать данные пациента"
+                            >
+                              ✏️
+                            </button>
                           </div>
-                          {editingPhoneId === appt.id ? (
-                            <div className="flex items-center gap-1 mt-1">
-                              <input
-                                autoFocus
-                                type="tel"
-                                value={editingPhoneValue}
-                                onChange={(e) => setEditingPhoneValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") handleSavePhone(appt);
-                                  if (e.key === "Escape") setEditingPhoneId(null);
-                                }}
-                                className="border border-blue-400 rounded px-1.5 py-0.5 text-xs w-36 outline-none"
-                                placeholder="+7 (999) 000-00-00"
-                              />
-                              <button
-                                onClick={() => handleSavePhone(appt)}
-                                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                              >
-                                ✓
-                              </button>
-                              <button
-                                onClick={() => setEditingPhoneId(null)}
-                                className="text-xs text-gray-400 hover:text-gray-600"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <span className="text-xs text-gray-400">
-                                {appt.patient_phone ?? "нет телефона"}
-                              </span>
-                              <button
-                                onClick={() => {
-                                  setEditingPhoneId(appt.id);
-                                  setEditingPhoneValue(appt.patient_phone ?? "");
-                                }}
-                                className="text-gray-300 hover:text-gray-500 text-xs"
-                                title="Изменить телефон"
-                              >
-                                ✏️
-                              </button>
-                            </div>
-                          )}
+                          <div className="text-xs text-gray-400 mt-0.5 space-x-2">
+                            {appt.patient_phone && <span>{appt.patient_phone}</span>}
+                            {appt.patient_email && <span>{appt.patient_email}</span>}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-gray-600">
                           {appt.doctor_last_name} {appt.doctor_first_name}

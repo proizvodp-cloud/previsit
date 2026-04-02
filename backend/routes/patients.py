@@ -1,5 +1,5 @@
 """
-Patients endpoints — update patient contact info.
+Patients endpoints — update patient info.
 """
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -12,20 +12,32 @@ from models.patient import Patient
 router = APIRouter()
 
 
-class PhoneUpdate(BaseModel):
-    phone: str
+class PatientUpdate(BaseModel):
+    first_name: str
+    last_name: str
+    phone: str | None = None
+    email: str | None = None
 
 
-@router.patch("/{patient_id}/phone")
-async def update_patient_phone(
-    patient_id: int, body: PhoneUpdate, db: AsyncSession = Depends(get_db)
+@router.patch("/{patient_id}")
+async def update_patient(
+    patient_id: int, body: PatientUpdate, db: AsyncSession = Depends(get_db)
 ):
-    """Update patient phone number."""
+    """Update patient contact info."""
     result = await db.execute(select(Patient).where(Patient.id == patient_id))
     patient = result.scalar_one_or_none()
     if patient is None:
         raise HTTPException(status_code=404, detail="Пациент не найден")
 
-    patient.phone = body.phone.strip() or None
+    patient.first_name = body.first_name.strip()
+    patient.last_name = body.last_name.strip()
+    patient.phone = body.phone.strip() if body.phone and body.phone.strip() else None
+    patient.email = body.email.strip() if body.email and body.email.strip() else None
     await db.commit()
-    return {"id": patient_id, "phone": patient.phone}
+    return {
+        "id": patient_id,
+        "first_name": patient.first_name,
+        "last_name": patient.last_name,
+        "phone": patient.phone,
+        "email": patient.email,
+    }

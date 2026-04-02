@@ -58,9 +58,9 @@ export const api = {
     }),
 
   // --- Patients ---
-  updatePatientPhone: (patientId: number, phone: string) =>
-    request<{ id: number; phone: string | null }>(`/api/patients/${patientId}/phone`, {
-      method: "PATCH",
-      body: JSON.stringify({ phone }),
-    }),
+  updatePatient: (patientId: number, data: { first_name: string; last_name: string; phone: string; email: string }) =>
+    request<{ id: number; first_name: string; last_name: string; phone: string | null; email: string | null }>(
+      `/api/patients/${patientId}`,
+      { method: "PATCH", body: JSON.stringify(data) }
+    ),
 };
