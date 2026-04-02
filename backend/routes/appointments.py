@@ -38,6 +38,7 @@ async def list_appointments(db: AsyncSession = Depends(get_db)):
         items.append(AppointmentListItem(
             id=appt.id,
             invite_token=appt.invite_token,
+            patient_id=appt.patient_id,
             status=appt.status,
             patient_first_name=appt.patient.first_name,
             patient_last_name=appt.patient.last_name,

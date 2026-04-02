@@ -80,6 +80,8 @@ export default function DashboardPage() {
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const [editingPhoneId, setEditingPhoneId] = useState<number | null>(null);
+  const [editingPhoneValue, setEditingPhoneValue] = useState("");
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -110,6 +112,24 @@ export default function DashboardPage() {
       alert(`Ошибка отправки: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setSendingId(null);
+    }
+  }
+
+  async function handleSavePhone(appt: AppointmentListItem) {
+    const newPhone = editingPhoneValue.trim();
+    try {
+      await api.updatePatientPhone(appt.patient_id, newPhone);
+      setAppointments((prev) =>
+        prev.map((a) =>
+          a.patient_id === appt.patient_id
+            ? { ...a, patient_phone: newPhone || null }
+            : a
+        )
+      );
+    } catch (e: unknown) {
+      alert(`Ошибка: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setEditingPhoneId(null);
     }
   }
 
@@ -177,8 +197,49 @@ export default function DashboardPage() {
                           <div className="font-medium text-gray-900">
                             {appt.patient_last_name} {appt.patient_first_name}
                           </div>
-                          {appt.patient_phone && (
-                            <div className="text-xs text-gray-400">{appt.patient_phone}</div>
+                          {editingPhoneId === appt.id ? (
+                            <div className="flex items-center gap-1 mt-1">
+                              <input
+                                autoFocus
+                                type="tel"
+                                value={editingPhoneValue}
+                                onChange={(e) => setEditingPhoneValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleSavePhone(appt);
+                                  if (e.key === "Escape") setEditingPhoneId(null);
+                                }}
+                                className="border border-blue-400 rounded px-1.5 py-0.5 text-xs w-36 outline-none"
+                                placeholder="+7 (999) 000-00-00"
+                              />
+                              <button
+                                onClick={() => handleSavePhone(appt)}
+                                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                onClick={() => setEditingPhoneId(null)}
+                                className="text-xs text-gray-400 hover:text-gray-600"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-xs text-gray-400">
+                                {appt.patient_phone ?? "нет телефона"}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  setEditingPhoneId(appt.id);
+                                  setEditingPhoneValue(appt.patient_phone ?? "");
+                                }}
+                                className="text-gray-300 hover:text-gray-500 text-xs"
+                                title="Изменить телефон"
+                              >
+                                ✏️
+                              </button>
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-gray-600">

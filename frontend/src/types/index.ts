@@ -53,6 +53,7 @@ export interface CaseListItem {
 export interface AppointmentListItem {
   id: number;
   invite_token: string;
+  patient_id: number;
   status: string;
   patient_first_name: string;
   patient_last_name: string;

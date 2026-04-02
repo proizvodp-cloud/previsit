@@ -56,4 +56,11 @@ export const api = {
     request<{ status: string; to: string }>(`/api/appointments/${appointmentId}/send-invite`, {
       method: "POST",
     }),
+
+  // --- Patients ---
+  updatePatientPhone: (patientId: number, phone: string) =>
+    request<{ id: number; phone: string | null }>(`/api/patients/${patientId}/phone`, {
+      method: "PATCH",
+      body: JSON.stringify({ phone }),
+    }),
 };

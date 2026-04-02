@@ -7,6 +7,7 @@ class AppointmentListItem(BaseModel):
     """Appointment info for dashboard list."""
     id: int
     invite_token: str
+    patient_id: int
     status: str  # pending | in_progress | completed | cancelled
     patient_first_name: str
     patient_last_name: str
