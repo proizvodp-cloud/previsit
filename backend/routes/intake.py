@@ -49,12 +49,23 @@ async def _load_by_token(
 
     # Lazy session creation: if session doesn't exist, create it now
     if appointment.intake_session is None:
+        # Use template matching the doctor's specialty; fall back to therapist
+        doctor_specialty = appointment.doctor.specialty
         template_result = await db.execute(
             select(IntakeTemplate)
-            .where(IntakeTemplate.specialty == "therapist")
+            .where(IntakeTemplate.specialty == doctor_specialty)
             .where(IntakeTemplate.is_active == True)
         )
         template = template_result.scalar_one_or_none()
+
+        if template is None:
+            # Fallback: try therapist template
+            template_result = await db.execute(
+                select(IntakeTemplate)
+                .where(IntakeTemplate.specialty == "therapist")
+                .where(IntakeTemplate.is_active == True)
+            )
+            template = template_result.scalar_one_or_none()
 
         if template is None:
             raise HTTPException(
