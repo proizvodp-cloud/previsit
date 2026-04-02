@@ -37,7 +37,7 @@ export const api = {
 
   // --- Cases ---
   getCases: () =>
-    request<CaseListItem[]>(`/api/cases/`),
+    request<CaseListItem[]>(`/api/cases`),
 
   getCase: (id: string | number) =>
     request<CaseData>(`/api/cases/${id}`),
@@ -50,7 +50,7 @@ export const api = {
 
   // --- Appointments ---
   getAppointments: () =>
-    request<AppointmentListItem[]>(`/api/appointments/`),
+    request<AppointmentListItem[]>(`/api/appointments`),
 
   sendInvite: (appointmentId: number) =>
     request<{ status: string; to: string }>(`/api/appointments/${appointmentId}/send-invite`, {
