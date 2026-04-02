@@ -15,7 +15,7 @@ from services import email_service
 router = APIRouter()
 
 
-@router.get("/", response_model=list[AppointmentListItem])
+@router.get("", response_model=list[AppointmentListItem])
 async def list_appointments(db: AsyncSession = Depends(get_db)):
     """List all appointments with their intake status."""
     result = await db.execute(

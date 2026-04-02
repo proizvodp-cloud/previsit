@@ -17,7 +17,7 @@ from schemas.case import CaseOut, CaseListItem, ReviewRequest
 router = APIRouter()
 
 
-@router.get("/", response_model=list[CaseListItem])
+@router.get("", response_model=list[CaseListItem])
 async def list_cases(db: AsyncSession = Depends(get_db)):
     """List all cases for doctor dashboard."""
     result = await db.execute(

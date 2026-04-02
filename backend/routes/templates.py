@@ -20,7 +20,7 @@ class TemplateListItem(BaseModel):
     questions_count: int
 
 
-@router.get("/", response_model=list[TemplateListItem])
+@router.get("", response_model=list[TemplateListItem])
 async def list_templates(db: AsyncSession = Depends(get_db)):
     """List all available intake templates."""
     result = await db.execute(

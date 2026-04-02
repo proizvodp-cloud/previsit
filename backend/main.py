@@ -8,6 +8,7 @@ app = FastAPI(
     title="PreVisit API",
     description="Pre-visit patient intake API",
     version="0.1.0",
+    redirect_slashes=False,
 )
 
 app.add_middleware(
