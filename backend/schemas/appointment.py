@@ -11,6 +11,7 @@ class AppointmentListItem(BaseModel):
     patient_first_name: str
     patient_last_name: str
     patient_email: str | None
+    patient_phone: str | None
     doctor_first_name: str
     doctor_last_name: str
     scheduled_at: datetime

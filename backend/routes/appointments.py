@@ -42,6 +42,7 @@ async def list_appointments(db: AsyncSession = Depends(get_db)):
             patient_first_name=appt.patient.first_name,
             patient_last_name=appt.patient.last_name,
             patient_email=appt.patient.email,
+            patient_phone=appt.patient.phone,
             doctor_first_name=appt.doctor.first_name,
             doctor_last_name=appt.doctor.last_name,
             scheduled_at=appt.scheduled_at,

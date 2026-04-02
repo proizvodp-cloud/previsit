@@ -48,6 +48,30 @@ function IntakeStatusBadge({ status }: { status: string | null }) {
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
+function shareWhatsApp(appt: AppointmentListItem) {
+  const phone = appt.patient_phone?.replace(/\D/g, "");
+  if (!phone) return;
+  const url = `${window.location.origin}/intake/${appt.invite_token}`;
+  const msg = `Уважаемый(ая) ${appt.patient_first_name}, ваш приём ${formatDate(appt.scheduled_at)}. Пожалуйста, заполните анкету заранее: ${url}`;
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+}
+
+function shareTelegram(appt: AppointmentListItem) {
+  const url = `${window.location.origin}/intake/${appt.invite_token}`;
+  const msg = `Уважаемый(ая) ${appt.patient_first_name}, ваш приём ${formatDate(appt.scheduled_at)}. Пожалуйста, заполните анкету заранее:`;
+  window.open(
+    `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(msg)}`,
+    "_blank"
+  );
+}
+
+function shareSMS(appt: AppointmentListItem) {
+  if (!appt.patient_phone) return;
+  const url = `${window.location.origin}/intake/${appt.invite_token}`;
+  const msg = `Уважаемый(ая) ${appt.patient_first_name}, ваш приём ${formatDate(appt.scheduled_at)}. Заполните анкету: ${url}`;
+  window.open(`sms:${appt.patient_phone}?body=${encodeURIComponent(msg)}`);
+}
+
 export default function DashboardPage() {
   const [cases, setCases] = useState<CaseListItem[]>([]);
   const [appointments, setAppointments] = useState<AppointmentListItem[]>([]);
@@ -55,6 +79,17 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+
+  useEffect(() => {
+    function handleOutsideClick(e: MouseEvent) {
+      if (!(e.target as Element).closest("[data-dropdown]")) {
+        setOpenDropdownId(null);
+      }
+    }
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     Promise.all([api.getCases(), api.getAppointments()])
@@ -142,8 +177,8 @@ export default function DashboardPage() {
                           <div className="font-medium text-gray-900">
                             {appt.patient_last_name} {appt.patient_first_name}
                           </div>
-                          {appt.patient_email && (
-                            <div className="text-xs text-gray-400">{appt.patient_email}</div>
+                          {appt.patient_phone && (
+                            <div className="text-xs text-gray-400">{appt.patient_phone}</div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-gray-600">
@@ -156,21 +191,54 @@ export default function DashboardPage() {
                           <IntakeStatusBadge status={appt.intake_status} />
                         </td>
                         <td className="px-4 py-3">
-                          {appt.patient_email ? (
+                          <div className="relative" data-dropdown>
                             <button
-                              onClick={() => handleSendInvite(appt)}
-                              disabled={isSending || isSent}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                                isSent
-                                  ? "bg-green-100 text-green-700 cursor-default"
-                                  : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenDropdownId(
+                                  openDropdownId === appt.id ? null : appt.id
+                                );
+                              }}
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                             >
-                              {isSending ? "Отправка..." : isSent ? "✓ Отправлено" : "Отправить ссылку"}
+                              Отправить ссылку ▾
                             </button>
-                          ) : (
-                            <span className="text-xs text-gray-400">Нет email</span>
-                          )}
+                            {openDropdownId === appt.id && (
+                              <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-10 py-1">
+                                {appt.patient_phone && (
+                                  <>
+                                    <button
+                                      onClick={() => { shareWhatsApp(appt); setOpenDropdownId(null); }}
+                                      className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 text-gray-700"
+                                    >
+                                      📱 WhatsApp
+                                    </button>
+                                    <button
+                                      onClick={() => { shareSMS(appt); setOpenDropdownId(null); }}
+                                      className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 text-gray-700"
+                                    >
+                                      💬 SMS
+                                    </button>
+                                  </>
+                                )}
+                                <button
+                                  onClick={() => { shareTelegram(appt); setOpenDropdownId(null); }}
+                                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 text-gray-700"
+                                >
+                                  ✈️ Telegram
+                                </button>
+                                {appt.patient_email && (
+                                  <button
+                                    onClick={() => { handleSendInvite(appt); setOpenDropdownId(null); }}
+                                    disabled={isSending || isSent}
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+                                  >
+                                    {isSent ? "✓ Email отправлен" : "📧 Email"}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

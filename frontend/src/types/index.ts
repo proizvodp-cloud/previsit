@@ -57,6 +57,7 @@ export interface AppointmentListItem {
   patient_first_name: string;
   patient_last_name: string;
   patient_email: string | null;
+  patient_phone: string | null;
   doctor_first_name: string;
   doctor_last_name: string;
   scheduled_at: string;
