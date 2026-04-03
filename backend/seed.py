@@ -9,7 +9,14 @@ import uuid
 from datetime import datetime, timezone, timedelta, date
 from pathlib import Path
 
+import bcrypt as _bcrypt
 from sqlalchemy import select
+
+DEFAULT_PASSWORD = "doctor123"
+
+
+def _hash_password(plain: str) -> str:
+    return _bcrypt.hashpw(plain.encode(), _bcrypt.gensalt()).decode()
 
 from database import async_session
 from models.clinic import Clinic
@@ -133,12 +140,18 @@ async def seed():
                     specialty=d["specialty"],
                     email=d["email"],
                     phone=d["phone"],
+                    hashed_password=_hash_password(DEFAULT_PASSWORD),
                 )
                 db.add(doctor)
                 await db.flush()
                 print(f"[+] Doctor created: {d['first_name']} {d['last_name']} ({d['specialty']})")
             else:
-                print(f"[=] Doctor already exists: {d['first_name']} {d['last_name']}")
+                # Обновляем пароль, если он не задан
+                if not doctor.hashed_password:
+                    doctor.hashed_password = _hash_password(DEFAULT_PASSWORD)
+                    print(f"[~] Password set for: {d['first_name']} {d['last_name']}")
+                else:
+                    print(f"[=] Doctor already exists: {d['first_name']} {d['last_name']}")
             doctor_map[d["email"]] = doctor
 
         # --- Intake Templates ---

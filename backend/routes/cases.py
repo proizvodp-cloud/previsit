@@ -9,7 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database import get_db
+from deps import get_current_doctor
 from models.case import Case
+from models.doctor import Doctor
 from models.intake_session import IntakeSession
 from models.appointment import Appointment
 from schemas.case import CaseOut, CaseListItem, ReviewRequest
@@ -17,9 +19,12 @@ from schemas.case import CaseOut, CaseListItem, ReviewRequest
 router = APIRouter()
 
 
-@router.get("/", response_model=list[CaseListItem])
-async def list_cases(db: AsyncSession = Depends(get_db)):
-    """List all cases for doctor dashboard."""
+@router.get("", response_model=list[CaseListItem])
+async def list_cases(
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
+):
+    """List cases for the current doctor."""
     result = await db.execute(
         select(Case)
         .options(
@@ -28,6 +33,7 @@ async def list_cases(db: AsyncSession = Depends(get_db)):
             .selectinload(Appointment.patient),
             selectinload(Case.doctor),
         )
+        .where(Case.doctor_id == current_doctor.id)
         .order_by(Case.created_at.desc())
     )
     cases = result.scalars().all()
@@ -53,12 +59,15 @@ async def review_case(
     case_id: int,
     body: ReviewRequest,
     db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
 ):
     """Mark case as reviewed and optionally save doctor notes."""
     result = await db.execute(select(Case).where(Case.id == case_id))
     case = result.scalar_one_or_none()
     if case is None:
         raise HTTPException(status_code=404, detail="Кейс не найден")
+    if case.doctor_id != current_doctor.id:
+        raise HTTPException(status_code=403, detail="Нет доступа к этому кейсу")
 
     case.status = "reviewed"
     case.reviewed_at = datetime.now(timezone.utc)
@@ -70,7 +79,11 @@ async def review_case(
 
 
 @router.get("/{case_id}", response_model=CaseOut)
-async def get_case(case_id: int, db: AsyncSession = Depends(get_db)):
+async def get_case(
+    case_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
+):
     """Get case details for doctor view."""
     result = await db.execute(
         select(Case)
@@ -86,6 +99,8 @@ async def get_case(case_id: int, db: AsyncSession = Depends(get_db)):
 
     if case is None:
         raise HTTPException(status_code=404, detail="Кейс не найден")
+    if case.doctor_id != current_doctor.id:
+        raise HTTPException(status_code=403, detail="Нет доступа к этому кейсу")
 
     appointment = case.intake_session.appointment
     patient = appointment.patient

@@ -8,10 +8,10 @@ export default function Home() {
         <p className="text-gray-500">Для пациентов: откройте ссылку из вашего уведомления</p>
         <div className="pt-2">
           <Link
-            href="/cases"
+            href="/login"
             className="inline-block px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
           >
-            Дашборд врача →
+            Войти как врач →
           </Link>
         </div>
       </div>

@@ -22,6 +22,7 @@ class Doctor(Base, TimestampMixin):
     specialty: Mapped[str | None] = mapped_column(String(100))
     email: Mapped[str | None] = mapped_column(String(255), unique=True)
     phone: Mapped[str | None] = mapped_column(String(50))
+    hashed_password: Mapped[str | None] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     clinic: Mapped["Clinic"] = relationship("Clinic", back_populates="doctors")

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { api, auth } from "@/lib/api";
 import type { CaseData } from "@/types";
 
 const SUMMARY_LABELS: Record<string, string> = {
@@ -28,11 +28,18 @@ function SectionCard({ label, value }: { label: string; value: string | undefine
 
 export default function CasePage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const [caseData, setCaseData] = useState<CaseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!auth.getToken()) {
+      router.replace("/login");
+    }
+  }, [router]);
 
   // Review form state
   const [notes, setNotes] = useState("");

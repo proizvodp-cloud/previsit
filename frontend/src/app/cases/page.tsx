@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { api, auth } from "@/lib/api";
 import type { AppointmentListItem, CaseListItem } from "@/types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────────────
@@ -190,6 +191,7 @@ function shareSMS(appt: AppointmentListItem) {
 // ─── Main Page ────────────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [cases, setCases] = useState<CaseListItem[]>([]);
   const [appointments, setAppointments] = useState<AppointmentListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,6 +201,18 @@ export default function DashboardPage() {
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [editingPatient, setEditingPatient] = useState<AppointmentListItem | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  // Проверка авторизации при загрузке
+  useEffect(() => {
+    if (!auth.getToken()) {
+      router.replace("/login");
+    }
+  }, [router]);
+
+  function handleLogout() {
+    auth.clear();
+    router.push("/login");
+  }
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -289,12 +303,20 @@ export default function DashboardPage() {
       )}
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <h1 className="text-xl font-semibold text-gray-900">Дашборд</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          {cases.length} кейс{cases.length === 1 ? "" : cases.length < 5 ? "а" : "ов"} ·{" "}
-          {pendingAppointments.length} записей ожидают анкету
-        </p>
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Дашборд</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {cases.length} кейс{cases.length === 1 ? "" : cases.length < 5 ? "а" : "ов"} ·{" "}
+            {pendingAppointments.length} записей ожидают анкету
+          </p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          Выйти
+        </button>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">

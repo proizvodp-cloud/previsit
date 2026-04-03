@@ -7,6 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from deps import get_current_doctor
+from models.doctor import Doctor
 from models.patient import Patient
 
 router = APIRouter()
@@ -21,7 +23,10 @@ class PatientUpdate(BaseModel):
 
 @router.patch("/{patient_id}")
 async def update_patient(
-    patient_id: int, body: PatientUpdate, db: AsyncSession = Depends(get_db)
+    patient_id: int,
+    body: PatientUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: Doctor = Depends(get_current_doctor),
 ):
     """Update patient contact info."""
     result = await db.execute(select(Patient).where(Patient.id == patient_id))

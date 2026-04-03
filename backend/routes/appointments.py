@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database import get_db
+from deps import get_current_doctor
 from models.appointment import Appointment
+from models.doctor import Doctor
 from models.intake_session import IntakeSession
 from schemas.appointment import AppointmentListItem
 from services import email_service
@@ -15,9 +17,12 @@ from services import email_service
 router = APIRouter()
 
 
-@router.get("/", response_model=list[AppointmentListItem])
-async def list_appointments(db: AsyncSession = Depends(get_db)):
-    """List all appointments with their intake status."""
+@router.get("", response_model=list[AppointmentListItem])
+async def list_appointments(
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
+):
+    """List appointments for the current doctor."""
     result = await db.execute(
         select(Appointment)
         .options(
@@ -25,6 +30,7 @@ async def list_appointments(db: AsyncSession = Depends(get_db)):
             selectinload(Appointment.doctor),
             selectinload(Appointment.intake_session).selectinload(IntakeSession.case),
         )
+        .where(Appointment.doctor_id == current_doctor.id)
         .order_by(Appointment.scheduled_at.desc())
     )
     appointments = result.scalars().all()
@@ -54,7 +60,11 @@ async def list_appointments(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{appointment_id}/send-invite")
-async def send_invite(appointment_id: int, db: AsyncSession = Depends(get_db)):
+async def send_invite(
+    appointment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
+):
     """Send intake invite link to patient email."""
     result = await db.execute(
         select(Appointment)
@@ -67,6 +77,8 @@ async def send_invite(appointment_id: int, db: AsyncSession = Depends(get_db)):
     appt = result.scalar_one_or_none()
     if appt is None:
         raise HTTPException(status_code=404, detail="Запись не найдена")
+    if appt.doctor_id != current_doctor.id:
+        raise HTTPException(status_code=403, detail="Нет доступа к этой записи")
     if not appt.patient.email:
         raise HTTPException(status_code=400, detail="У пациента не указан email")
 
